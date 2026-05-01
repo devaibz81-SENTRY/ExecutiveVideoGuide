@@ -1,4 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Executive Video Protocol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.2.0",
+      "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="https://esm.sh/run" title="main">
 import React, { useState, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
 
 /**
  * NOTE FOR LOCAL EXECUTION:
@@ -22,7 +56,7 @@ const Icons = {
 };
 
 const StepRow = ({ title, icon: Icon, children, tip, visual, id }) => (
-  <div id={id} className="bg-white rounded-[1.5rem] md:rounded-[2rem] p-5 md:p-10 shadow-sm border border-slate-100 flex flex-col lg:flex-row gap-8 md:gap-10 mb-6 md:mb-8 transition-all hover:shadow-xl hover:border-blue-100 group">
+  <div id={id} className="bg-white rounded-[2rem] p-6 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100/60 flex flex-col lg:flex-row gap-8 md:gap-12 mb-6 md:mb-8 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(59,130,246,0.15)] hover:-translate-y-2 hover:scale-[1.01] hover:border-blue-200 group cursor-default">
     <div className="flex-grow space-y-4 md:space-y-6">
       <div className="flex items-center gap-3 md:gap-4">
         <div className="p-3 md:p-4 bg-blue-50 text-blue-700 rounded-xl md:rounded-2xl group-hover:scale-110 transition-transform">
@@ -222,9 +256,10 @@ export default function App() {
   const completed = checks.filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 pb-20 md:pb-32 overflow-x-hidden">
-      <header className="bg-[#1e293b] text-white pt-12 pb-32 md:pt-20 md:pb-40 px-4 md:px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-8">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 md:pb-32 overflow-x-hidden font-sans">
+      <header className="bg-slate-950 text-white pt-16 pb-36 md:pt-24 md:pb-48 px-4 md:px-6 relative overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-[400px] bg-blue-600/20 blur-[120px] rounded-full pointer-events-none"></div>
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-8 relative z-10">
           <div className="max-w-2xl">
             <div className="flex flex-wrap items-center gap-3 mb-4 md:mb-6">
               <span className="bg-blue-600 px-3 py-1 rounded text-[9px] md:text-[10px] font-black uppercase tracking-widest">Office Ready</span>
@@ -244,7 +279,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 md:px-6 -mt-16 md:-mt-24">
+      <main className="max-w-6xl mx-auto px-4 md:px-6 -mt-16 md:-mt-24 relative z-20">
         <StepRow 
           id="camera"
           title="01. Professional Look" 
@@ -386,3 +421,9 @@ export default function App() {
     </div>
   );
 }
+
+const root = createRoot(document.getElementById('root'));
+root.render(<App />);
+  </script>
+</body>
+</html>
