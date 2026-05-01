@@ -244,7 +244,7 @@ const PerformanceSVG = () => (
   </div>
 );
 
-export default function App() {
+function App() {
   const [checks, setChecks] = useState(new Array(7).fill(false));
   const toggle = (i) => {
     const n = [...checks];
