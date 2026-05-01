@@ -151,31 +151,123 @@ const LightingSVG = () => (
   </div>
 );
 
-const AudioSVG = () => (
-  <div className="bg-[#0f172a] rounded-[1.5rem] p-6 shadow-2xl border border-slate-800 w-full flex items-center justify-center aspect-video lg:aspect-auto">
-    <svg viewBox="0 0 200 120" className="w-full h-full">
-      <rect x="30" y="50" width="20" height="20" rx="4" fill="#1e293b" stroke="#3b82f6" strokeWidth="1"/>
-      <circle cx="40" cy="50" r="8" fill="#3b82f6" opacity="0.4"/>
-      <g>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <path 
-            key={i}
-            d={`M${60 + (i * 15)} ${40 - (i * 2)} Q${75 + (i * 15)} 60 ${60 + (i * 15)} ${80 + (i * 2)}`} 
-            fill="none" 
-            stroke="#3b82f6" 
-            strokeWidth="2" 
-            strokeLinecap="round"
-            opacity={1 - (i * 0.15)}
+const LiveAudioMeter = () => {
+  const [level, setLevel] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const [error, setError] = useState(null);
+  const animationRef = React.useRef(null);
+  const analyserRef = React.useRef(null);
+
+  const updateMeter = () => {
+    if (!analyserRef.current) return;
+    const array = new Uint8Array(analyserRef.current.frequencyBinCount);
+    analyserRef.current.getByteFrequencyData(array);
+    let values = 0;
+    for (let i = 0; i < array.length; i++) {
+      values += array[i];
+    }
+    const average = values / array.length;
+    const normalized = Math.min(100, Math.round((average / 80) * 100));
+    setLevel(normalized);
+    animationRef.current = requestAnimationFrame(updateMeter);
+  };
+
+  const startMic = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setIsActive(true);
+      setError(null);
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      
+      analyser.smoothingTimeConstant = 0.5;
+      analyser.fftSize = 256;
+      
+      microphone.connect(analyser);
+      analyserRef.current = analyser;
+      
+      updateMeter();
+    } catch (err) {
+      console.error(err);
+      setError("Mic access denied");
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, []);
+
+  let statusText = "WAITING";
+  let statusColor = "text-slate-500";
+  
+  if (isActive) {
+    if (level < 15) {
+      statusText = "LOW";
+      statusColor = "text-yellow-500";
+    } else if (level >= 85) {
+      statusText = "OVER";
+      statusColor = "text-red-500";
+    } else {
+      statusText = "GOOD";
+      statusColor = "text-green-500";
+    }
+  }
+
+  return (
+    <div className="bg-[#0f172a] rounded-[1.5rem] p-6 shadow-2xl border border-slate-800 w-full flex flex-col items-center justify-center aspect-video lg:aspect-auto h-full min-h-[140px] relative overflow-hidden">
+      {!isActive ? (
+        <div className="flex flex-col items-center gap-3">
+          <button 
+            onClick={startMic}
+            className="bg-blue-600 hover:bg-blue-500 text-white font-black py-2.5 px-6 rounded-full text-xs uppercase tracking-[0.2em] transition-all duration-300 shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:shadow-[0_0_30px_rgba(37,99,235,0.6)] hover:scale-105 active:scale-95 flex items-center gap-2"
           >
-            <animate attributeName="stroke-dasharray" from="0, 100" to="100, 0" dur={`${1 + (i * 0.2)}s`} repeatCount="indefinite" />
-            <animate attributeName="opacity" values={`${1 - (i * 0.15)};0;${1 - (i * 0.15)}`} dur="2s" repeatCount="indefinite" />
-          </path>
-        ))}
-      </g>
-      <text x="100" y="105" fill="#94a3b8" fontSize="8" textAnchor="middle" fontWeight="bold">CLEAN AUDIO CAPTURE</text>
-    </svg>
-  </div>
-);
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+            TEST MIC
+          </button>
+          <span className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Requires Permission</span>
+        </div>
+      ) : (
+        <div className="w-full flex flex-col items-center gap-4 relative z-10 max-w-[200px]">
+          <div className="flex justify-between w-full items-end border-b border-slate-800 pb-2">
+            <div className="flex flex-col">
+              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Input Level</span>
+              <span className={`text-xs font-black tracking-widest ${statusColor} transition-colors`}>{statusText}</span>
+            </div>
+            <div className={`text-2xl font-black tabular-nums transition-colors ${statusColor}`}>
+              {level}<span className="text-[10px] text-slate-600 ml-0.5">%</span>
+            </div>
+          </div>
+          
+          <div className="w-full flex gap-1 h-6">
+            {Array.from({ length: 20 }).map((_, i) => {
+              const threshold = i * 5;
+              const isActiveSegment = level > threshold;
+              let segmentColor = "bg-slate-800";
+              
+              if (isActiveSegment) {
+                if (threshold < 15) segmentColor = "bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]";
+                else if (threshold >= 85) segmentColor = "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]";
+                else segmentColor = "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]";
+              }
+              
+              return (
+                <div 
+                  key={i} 
+                  className={`flex-1 rounded-sm transition-all duration-75 ${segmentColor}`}
+                  style={{ opacity: isActiveSegment ? 1 : 0.3 }}
+                ></div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {error && <p className="text-red-500 text-[10px] mt-3 font-bold absolute bottom-2">{error}</p>}
+    </div>
+  );
+};
 
 const FramingSVG = () => (
   <div className="bg-[#0f172a] rounded-[1.5rem] p-6 shadow-2xl border border-slate-800 w-full flex items-center justify-center aspect-video lg:aspect-auto">
@@ -308,7 +400,7 @@ function App() {
           id="audio"
           title="03. Clear Sound" 
           icon={Icons.Mic} 
-          visual={<AudioSVG />}
+          visual={<LiveAudioMeter />}
           tip="Sound is 50% of the video. If they can't hear you clearly, they won't watch."
         >
           <div className="flex items-start gap-3">
